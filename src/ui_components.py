@@ -51,27 +51,68 @@ def display_model_info(model_info: Dict[str, int]):
         st.metric("拘束条件数", f"{model_info['spc_count']:,}")
 
 
-def display_subcases(subcases: List[Dict[str, Any]]):
-    """解析ステップを表示"""
+def display_subcases(subcases: List[Dict[str, Any]], stage_configs: List[Dict[str, Any]] = None, geoparams: List[Dict[str, Any]] = None):
+    """解析ステップを表示（ステージ設定と地盤パラメータを統合）"""
     st.subheader("🔄 解析ステップ")
     
     if not subcases:
         st.info("解析ステップが見つかりませんでした。")
         return
     
+    # ステージ設定とGEOPARMを辞書化
+    stage_dict = {sc['id']: sc for sc in (stage_configs or [])}
+    geoparm_dict = {gp['subcase_id']: gp['geoparm_id'] for gp in (geoparams or [])}
+    
     df_data = []
     for sc in subcases:
-        df_data.append({
+        row = {
             'ステップ': sc['id'],
             'ラベル': sc['label'],
             'SOL': sc['sol'] if sc['sol'] else '-',
             '荷重ID': sc['load'] if sc['load'] else '-',
             '拘束ID': sc['spc'] if sc['spc'] else '-',
             '前ステップ': sc['use_stage'] if sc['use_stage'] else '-'
-        })
+        }
+        
+        # GEOPARM IDを追加
+        if sc['id'] in geoparm_dict:
+            row['GEOPARM'] = geoparm_dict[sc['id']]
+        else:
+            row['GEOPARM'] = '-'
+        
+        # ステージ設定パラメータを追加（簡略化）
+        if sc['id'] in stage_dict:
+            stage = stage_dict[sc['id']]
+            params = []
+            if stage['param1'] is not None:
+                params.append(f"P1:{stage['param1']}")
+            if stage['param2'] is not None:
+                params.append(f"P2:{stage['param2']}")
+            if stage['param3'] is not None:
+                params.append(f"P3:{stage['param3']}")
+            if stage['param4'] is not None:
+                params.append(f"P4:{stage['param4']}")
+            row['STGCONF'] = ', '.join(params) if params else '-'
+        else:
+            row['STGCONF'] = '-'
+        
+        df_data.append(row)
     
     df = pd.DataFrame(df_data)
     st.dataframe(df, use_container_width=True, hide_index=True)
+    
+    # 補足説明
+    with st.expander("📖 項目の説明"):
+        st.markdown("""
+        - **ステップ**: SUBCASE ID
+        - **ラベル**: 解析ステップの名称
+        - **SOL**: ソルバータイプ（106=非線形静解析）
+        - **荷重ID**: 適用される荷重のID
+        - **拘束ID**: 適用される境界条件(SPC)のID
+        - **前ステップ**: 前のステップのID（ステージ解析）
+        - **GEOPARM**: 地盤解析パラメータのID
+        - **STGCONF**: ステージ設定パラメータ
+        """)
 
 
 def display_loads(loads: Dict[str, Any]):
@@ -108,7 +149,7 @@ def display_loads(loads: Dict[str, Any]):
         st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-def display_properties(properties: List[Dict[str, Any]]):
+def display_properties(properties: List[Dict[str, Any]], materials: List[Dict[str, Any]] = None):
     """プロパティ情報を表示"""
     st.subheader("📐 プロパティ")
     
@@ -116,36 +157,86 @@ def display_properties(properties: List[Dict[str, Any]]):
         st.info("プロパティが見つかりませんでした。")
         return
     
-    # シェルとソリッドに分類
+    # 材料IDから材料名を取得する関数
+    def get_material_info(material_id):
+        if not material_id or not materials:
+            return '-'
+        for mat in materials:
+            if mat['id'] == material_id:
+                return f"{material_id}: {mat['name']}"
+        return str(material_id)
+    
+    # プロパティタイプ別に分類
     shell_props = [p for p in properties if p['type'] == 'Shell']
     solid_props = [p for p in properties if p['type'] == 'Solid']
+    beam_props = [p for p in properties if p['type'] == 'Beam']
+    truss_props = [p for p in properties if p['type'] == 'Embedded Truss']
     
+    # タイプ別の統計（1次元 → 2次元 → 3次元の順）
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("ビーム (1次元)", len(beam_props))
+    with col2:
+        st.metric("埋込トラス (1次元)", len(truss_props))
+    with col3:
+        st.metric("シェル (2次元)", len(shell_props))
+    with col4:
+        st.metric("ソリッド (3次元)", len(solid_props))
+    
+    st.markdown("---")
+    
+    # ビームプロパティ（1次元）
+    if beam_props:
+        with st.expander(f"**ビームプロパティ (1次元)** ({len(beam_props)}件)", expanded=True):
+            df_data = []
+            for prop in beam_props:
+                df_data.append({
+                    'ID': prop['id'],
+                    'プロパティ名': prop['name'],
+                    '材料': get_material_info(prop['material_id'])
+                })
+            df = pd.DataFrame(df_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+    
+    # 埋込トラスプロパティ（1次元）
+    if truss_props:
+        with st.expander(f"**埋込トラスプロパティ (1次元)** ({len(truss_props)}件)", expanded=True):
+            df_data = []
+            for prop in truss_props:
+                df_data.append({
+                    'ID': prop['id'],
+                    'プロパティ名': prop['name'],
+                    '材料': get_material_info(prop['material_id'])
+                })
+            df = pd.DataFrame(df_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+    
+    # シェルプロパティ（2次元）
     if shell_props:
-        st.markdown("**シェルプロパティ**")
-        df_data = []
-        for prop in shell_props:
-            df_data.append({
-                'ID': prop['id'],
-                'プロパティ名': prop['name'],
-                'タイプ': prop['type'],
-                '厚さ (m)': prop['thickness'] if prop['thickness'] else '-',
-                '材料ID': prop['material_id'] if prop['material_id'] else '-'
-            })
-        df = pd.DataFrame(df_data)
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        with st.expander(f"**シェルプロパティ (2次元)** ({len(shell_props)}件)", expanded=True):
+            df_data = []
+            for prop in shell_props:
+                df_data.append({
+                    'ID': prop['id'],
+                    'プロパティ名': prop['name'],
+                    '厚さ (m)': prop['thickness'] if prop['thickness'] else '-',
+                    '材料': get_material_info(prop['material_id'])
+                })
+            df = pd.DataFrame(df_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
     
+    # ソリッドプロパティ（3次元）
     if solid_props:
-        st.markdown("**ソリッドプロパティ**")
-        df_data = []
-        for prop in solid_props:
-            df_data.append({
-                'ID': prop['id'],
-                'プロパティ名': prop['name'],
-                'タイプ': prop['type'],
-                '材料ID': prop['material_id'] if prop['material_id'] else '-'
-            })
-        df = pd.DataFrame(df_data)
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        with st.expander(f"**ソリッドプロパティ (3次元)** ({len(solid_props)}件)", expanded=True):
+            df_data = []
+            for prop in solid_props:
+                df_data.append({
+                    'ID': prop['id'],
+                    'プロパティ名': prop['name'],
+                    '材料': get_material_info(prop['material_id'])
+                })
+            df = pd.DataFrame(df_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
 
 
 def display_materials(materials: List[Dict[str, Any]]):
@@ -300,4 +391,90 @@ def display_analysis_settings(title: str, params: Dict[str, Any], nlparams: List
         if df_data:
             df = pd.DataFrame(df_data)
             st.dataframe(df, use_container_width=True, hide_index=True)
+
+
+def display_sets(sets: List[Dict[str, Any]]):
+    """SET定義を表示"""
+    st.subheader("📦 SET定義")
+    
+    if not sets:
+        st.info("SET定義が見つかりませんでした。")
+        return
+    
+    df_data = []
+    for s in sets:
+        df_data.append({
+            'SET ID': s['id'],
+            'コメント': s['comment'] if s['comment'] else '-',
+            '定義': s['definition']
+        })
+    
+    df = pd.DataFrame(df_data)
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+
+def display_stage_configs(stage_configs: List[Dict[str, Any]]):
+    """ステージ設定を表示"""
+    st.subheader("🔧 ステージ設定 (STGCONF)")
+    
+    if not stage_configs:
+        st.info("ステージ設定が見つかりませんでした。")
+        return
+    
+    df_data = []
+    for sc in stage_configs:
+        df_data.append({
+            'ステージID': sc['id'],
+            'パラメータ1': sc['param1'] if sc['param1'] else '-',
+            'パラメータ2': sc['param2'] if sc['param2'] else '-',
+            'パラメータ3': sc['param3'] if sc['param3'] else '-',
+            'パラメータ4': sc['param4'] if sc['param4'] else '-'
+        })
+    
+    df = pd.DataFrame(df_data)
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+
+def display_geoparams(geoparams: List[Dict[str, Any]]):
+    """地盤解析パラメータを表示"""
+    st.subheader("🌍 地盤解析パラメータ (GEOPARM)")
+    
+    if not geoparams:
+        st.info("地盤解析パラメータが見つかりませんでした。")
+        return
+    
+    df_data = []
+    for gp in geoparams:
+        df_data.append({
+            'SUBCASE ID': gp['subcase_id'],
+            'GEOPARM ID': gp['geoparm_id']
+        })
+    
+    df = pd.DataFrame(df_data)
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+
+def display_boundary_conditions(boundary_conditions: Dict[str, Any]):
+    """境界条件を表示"""
+    st.subheader("🔒 境界条件 (SPC)")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("SPC1定義数", f"{boundary_conditions['spc_count']:,}")
+    with col2:
+        st.metric("使用されているSPC ID数", len(boundary_conditions['spc_ids']))
+    
+    if boundary_conditions['spc_ids']:
+        st.markdown("---")
+        st.markdown("**SUBCASEで使用されているSPC ID**")
+        
+        df_data = []
+        for spc in boundary_conditions['spc_ids']:
+            df_data.append({
+                'SPC ID': spc['spc_id'],
+                'SUBCASE ID': spc['subcase_id']
+            })
+        
+        df = pd.DataFrame(df_data)
+        st.dataframe(df, use_container_width=True, hide_index=True)
 

@@ -19,7 +19,8 @@ from src.ui_components import (
     display_loads,
     display_properties,
     display_materials,
-    display_analysis_settings
+    display_analysis_settings,
+    display_boundary_conditions
 )
 
 
@@ -52,7 +53,7 @@ def main():
         use_sample = st.checkbox("サンプルファイルを使用", value=False)
         
         if use_sample:
-            sample_path = Path(__file__).parent / "docs" / "NXGT1-3-4-1-10-1_施工方向_No1からNo2.mec"
+            sample_path = Path(__file__).parent / "docs" / "NXGT1-15-17-19_解析ケース-1.mec"
             if sample_path.exists():
                 st.success(f"サンプルファイル: {sample_path.name}")
             else:
@@ -67,7 +68,7 @@ def main():
                 file_content = uploaded_file.read().decode('utf-8', errors='ignore')
                 file_name = uploaded_file.name
             else:
-                sample_path = Path(__file__).parent / "docs" / "NXGT1-3-4-1-10-1_施工方向_No1からNo2.mec"
+                sample_path = Path(__file__).parent / "docs" / "NXGT1-15-17-19_解析ケース-1.mec"
                 with open(sample_path, 'r', encoding='utf-8', errors='ignore') as f:
                     file_content = f.read()
                 file_name = sample_path.name
@@ -85,13 +86,14 @@ def main():
             st.success("✅ 解析完了!")
             
             # タブで情報を整理
-            tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+            tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
                 "📊 モデル情報",
                 "⚙️ 解析設定",
                 "🔄 解析ステップ",
                 "⚡ 荷重",
                 "📐 プロパティ",
-                "🧱 材料"
+                "🧱 材料",
+                "🔒 境界条件"
             ])
             
             with tab1:
@@ -100,13 +102,15 @@ def main():
                 # 統計情報
                 st.markdown("---")
                 st.subheader("📈 統計情報")
-                col1, col2, col3 = st.columns(3)
+                col1, col2, col3, col4 = st.columns(4)
                 with col1:
                     st.metric("材料数", len(parsed_data['materials']))
                 with col2:
                     st.metric("プロパティ数", len(parsed_data['properties']))
                 with col3:
                     st.metric("解析ステップ数", len(parsed_data['subcases']))
+                with col4:
+                    st.metric("SET定義数", len(parsed_data.get('sets', [])))
             
             with tab2:
                 display_analysis_settings(
@@ -116,16 +120,23 @@ def main():
                 )
             
             with tab3:
-                display_subcases(parsed_data['subcases'])
+                display_subcases(
+                    parsed_data['subcases'],
+                    parsed_data.get('stage_configs', []),
+                    parsed_data.get('geoparams', [])
+                )
             
             with tab4:
                 display_loads(parsed_data['loads'])
             
             with tab5:
-                display_properties(parsed_data['properties'])
+                display_properties(parsed_data['properties'], parsed_data['materials'])
             
             with tab6:
                 display_materials(parsed_data['materials'])
+            
+            with tab7:
+                display_boundary_conditions(parsed_data.get('boundary_conditions', {}))
             
         except Exception as e:
             st.error(f"❌ エラーが発生しました: {str(e)}")
@@ -145,10 +156,14 @@ def main():
         
         ### 対応している情報
         - ✅ モデル情報(節点数、要素数など)
-        - ✅ 解析ステップ(SUBCASE)
+        - ✅ 解析ステップ(SUBCASE、STGCONF、GEOPARM統合表示)
         - ✅ 荷重条件(GRAV, PLOAD4)
         - ✅ プロパティ(Shell, Solid)
         - ✅ 材料(弾性、D-min、Mohr-Coulomb)
+        - ✅ 境界条件(SPC)
+        - ✅ 非線形解析パラメータ(NLPARM)
+        - ✅ PARAMパラメータ
+        - ✅ SET定義(統計情報として表示)
         
         ### 今後の機能(予定)
         - 🔜 自動チェック機能
