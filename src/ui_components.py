@@ -99,7 +99,21 @@ def display_subcases(subcases: List[Dict[str, Any]], stage_configs: List[Dict[st
         df_data.append(row)
     
     df = pd.DataFrame(df_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "ステップ": st.column_config.NumberColumn("ステップ", width="small"),
+            "ラベル": st.column_config.TextColumn("ラベル", width="large"),
+            "SOL": st.column_config.TextColumn("SOL", width="small"),
+            "荷重ID": st.column_config.NumberColumn("荷重ID", width="small"),
+            "拘束ID": st.column_config.NumberColumn("拘束ID", width="small"),
+            "前ステップ": st.column_config.NumberColumn("前ステップ", width="small"),
+            "GEOPARM": st.column_config.NumberColumn("GEOPARM", width="small"),
+            "STGCONF": st.column_config.TextColumn("STGCONF", width="medium"),
+        }
+    )
     
     # 補足説明
     with st.expander("📖 項目の説明"):
@@ -146,7 +160,17 @@ def display_loads(loads: Dict[str, Any]):
     
     if df_data:
         df = pd.DataFrame(df_data)
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(
+            df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "荷重タイプ": st.column_config.TextColumn("荷重タイプ", width="medium"),
+                "ID": st.column_config.NumberColumn("ID", width="small"),
+                "値": st.column_config.TextColumn("値", width="medium"),
+                "要素数": st.column_config.TextColumn("要素数", width="small"),
+            }
+        )
 
 
 def display_properties(properties: List[Dict[str, Any]], materials: List[Dict[str, Any]] = None):
@@ -196,7 +220,16 @@ def display_properties(properties: List[Dict[str, Any]], materials: List[Dict[st
                     '材料': get_material_info(prop['material_id'])
                 })
             df = pd.DataFrame(df_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "ID": st.column_config.NumberColumn("ID", width="small"),
+                    "プロパティ名": st.column_config.TextColumn("プロパティ名", width="large"),
+                    "材料": st.column_config.TextColumn("材料", width="medium"),
+                }
+            )
     
     # 埋込トラスプロパティ（1次元）
     if truss_props:
@@ -209,7 +242,16 @@ def display_properties(properties: List[Dict[str, Any]], materials: List[Dict[st
                     '材料': get_material_info(prop['material_id'])
                 })
             df = pd.DataFrame(df_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "ID": st.column_config.NumberColumn("ID", width="small"),
+                    "プロパティ名": st.column_config.TextColumn("プロパティ名", width="large"),
+                    "材料": st.column_config.TextColumn("材料", width="medium"),
+                }
+            )
     
     # シェルプロパティ（2次元）
     if shell_props:
@@ -223,7 +265,17 @@ def display_properties(properties: List[Dict[str, Any]], materials: List[Dict[st
                     '材料': get_material_info(prop['material_id'])
                 })
             df = pd.DataFrame(df_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "ID": st.column_config.NumberColumn("ID", width="small"),
+                    "プロパティ名": st.column_config.TextColumn("プロパティ名", width="large"),
+                    "厚さ (m)": st.column_config.TextColumn("厚さ (m)", width="small"),
+                    "材料": st.column_config.TextColumn("材料", width="medium"),
+                }
+            )
     
     # ソリッドプロパティ（3次元）
     if solid_props:
@@ -236,7 +288,16 @@ def display_properties(properties: List[Dict[str, Any]], materials: List[Dict[st
                     '材料': get_material_info(prop['material_id'])
                 })
             df = pd.DataFrame(df_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "ID": st.column_config.NumberColumn("ID", width="small"),
+                    "プロパティ名": st.column_config.TextColumn("プロパティ名", width="large"),
+                    "材料": st.column_config.TextColumn("材料", width="medium"),
+                }
+            )
 
 
 def display_materials(materials: List[Dict[str, Any]]):
@@ -281,7 +342,15 @@ def _display_elastic_materials(materials: List[Dict[str, Any]]):
             'γ (単位体積重量)\n(kN/m³)': gamma
         })
     df = pd.DataFrame(df_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "ID": st.column_config.NumberColumn("ID", width="small"),
+            "材料名": st.column_config.TextColumn("材料名", width="large"),
+        }
+    )
 
 
 def _display_dmin_materials(materials: List[Dict[str, Any]]):
@@ -303,7 +372,15 @@ def _display_dmin_materials(materials: List[Dict[str, Any]]):
             'K₀ (静止土圧係数)': mat['K0'] if mat.get('K0') else '-'
         })
     df = pd.DataFrame(df_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "ID": st.column_config.NumberColumn("ID", width="small"),
+            "材料名": st.column_config.TextColumn("材料名", width="large"),
+        }
+    )
 
 
 def _display_mohr_coulomb_materials(materials: List[Dict[str, Any]]):
@@ -327,7 +404,15 @@ def _display_mohr_coulomb_materials(materials: List[Dict[str, Any]]):
             'K₀ (静止土圧係数)': mat['K0'] if mat.get('K0') else '-'
         })
     df = pd.DataFrame(df_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "ID": st.column_config.NumberColumn("ID", width="small"),
+            "材料名": st.column_config.TextColumn("材料名", width="large"),
+        }
+    )
 
 
 def _display_generic_materials(materials: List[Dict[str, Any]]):
@@ -344,7 +429,15 @@ def _display_generic_materials(materials: List[Dict[str, Any]]):
             'K₀ (静止土圧係数)': mat['K0'] if mat.get('K0') else '-'
         })
     df = pd.DataFrame(df_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "ID": st.column_config.NumberColumn("ID", width="small"),
+            "材料名": st.column_config.TextColumn("材料名", width="large"),
+        }
+    )
 
 
 def display_analysis_settings(title: str, params: Dict[str, Any], nlparams: List[Dict[str, Any]]):
@@ -390,7 +483,18 @@ def display_analysis_settings(title: str, params: Dict[str, Any], nlparams: List
         
         if df_data:
             df = pd.DataFrame(df_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "ID": st.column_config.NumberColumn("ID", width="small"),
+                    "増分数": st.column_config.NumberColumn("増分数", width="small"),
+                    "解法": st.column_config.TextColumn("解法", width="medium"),
+                    "最大反復回数": st.column_config.NumberColumn("最大反復回数", width="small"),
+                    "収束判定": st.column_config.NumberColumn("収束判定", width="small"),
+                }
+            )
 
 
 def display_sets(sets: List[Dict[str, Any]]):
@@ -410,7 +514,16 @@ def display_sets(sets: List[Dict[str, Any]]):
         })
     
     df = pd.DataFrame(df_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "SET ID": st.column_config.NumberColumn("SET ID", width="small"),
+            "コメント": st.column_config.TextColumn("コメント", width="medium"),
+            "定義": st.column_config.TextColumn("定義", width="large"),
+        }
+    )
 
 
 def display_stage_configs(stage_configs: List[Dict[str, Any]]):
@@ -432,7 +545,18 @@ def display_stage_configs(stage_configs: List[Dict[str, Any]]):
         })
     
     df = pd.DataFrame(df_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "ステージID": st.column_config.NumberColumn("ステージID", width="small"),
+            "パラメータ1": st.column_config.TextColumn("パラメータ1", width="small"),
+            "パラメータ2": st.column_config.TextColumn("パラメータ2", width="small"),
+            "パラメータ3": st.column_config.TextColumn("パラメータ3", width="small"),
+            "パラメータ4": st.column_config.TextColumn("パラメータ4", width="small"),
+        }
+    )
 
 
 def display_geoparams(geoparams: List[Dict[str, Any]]):
@@ -451,12 +575,24 @@ def display_geoparams(geoparams: List[Dict[str, Any]]):
         })
     
     df = pd.DataFrame(df_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "SUBCASE ID": st.column_config.NumberColumn("SUBCASE ID", width="small"),
+            "GEOPARM ID": st.column_config.NumberColumn("GEOPARM ID", width="small"),
+        }
+    )
 
 
 def display_boundary_conditions(boundary_conditions: Dict[str, Any]):
     """境界条件を表示"""
     st.subheader("🔒 境界条件 (SPC)")
+    
+    if not boundary_conditions:
+        st.info("境界条件が見つかりませんでした。")
+        return
     
     col1, col2 = st.columns(2)
     with col1:
@@ -476,5 +612,13 @@ def display_boundary_conditions(boundary_conditions: Dict[str, Any]):
             })
         
         df = pd.DataFrame(df_data)
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(
+            df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "SPC ID": st.column_config.NumberColumn("SPC ID", width="small"),
+                "SUBCASE ID": st.column_config.NumberColumn("SUBCASE ID", width="small"),
+            }
+        )
 

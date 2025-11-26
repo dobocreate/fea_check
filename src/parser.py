@@ -27,6 +27,7 @@ def parse_mec_file(file_content: str) -> Dict[str, Any]:
     title = _extract_title(file_content)
     params = _extract_params(file_content)
     nlparams = _extract_nlparams(file_content)
+    boundary_conditions = _extract_boundary_conditions(file_content)
     
     return {
         'materials': materials,
@@ -36,7 +37,8 @@ def parse_mec_file(file_content: str) -> Dict[str, Any]:
         'model_info': model_info,
         'title': title,
         'params': params,
-        'nlparams': nlparams
+        'nlparams': nlparams,
+        'boundary_conditions': boundary_conditions
     }
 
 
@@ -45,7 +47,7 @@ def _extract_model_info(content: str) -> Dict[str, int]:
     return {
         'nodes': len(re.findall(r'^GRID\s', content, re.MULTILINE)),
         'elements': len(re.findall(r'^(?:CHEXA|CPENTA|CPYRAM|CTETRA|CQUAD4|CTRIA3)\s', content, re.MULTILINE)),
-        'spc_count': len(re.findall(r'^SPC1\s', content, re.MULTILINE)),
+        'spc_count': len(re.findall(r'^SPC1[,\s]', content, re.MULTILINE)),
     }
 
 
@@ -341,3 +343,29 @@ def _extract_nlparams(content: str) -> List[Dict[str, Any]]:
     
     return nlparams
 
+
+def _extract_boundary_conditions(content: str) -> Dict[str, Any]:
+    """境界条件(SPC)を抽出"""
+    boundary_conditions = {
+        'spc_count': 0,
+        'spc_ids': []
+    }
+    
+    # SPC1定義数
+    boundary_conditions['spc_count'] = len(re.findall(r'^SPC1[,\s]', content, re.MULTILINE))
+    
+    # SUBCASEで使用されているSPC ID
+    subcase_pattern = r'SUBCASE\s+(\d+)\s*\n((?:\s+[^\n]+\n)+)'
+    for match in re.finditer(subcase_pattern, content):
+        subcase_id = int(match.group(1))
+        block = match.group(2)
+        
+        spc_match = re.search(r'SPC\s*=\s*(\d+)', block)
+        if spc_match:
+            spc_id = int(spc_match.group(1))
+            boundary_conditions['spc_ids'].append({
+                'subcase_id': subcase_id,
+                'spc_id': spc_id
+            })
+            
+    return boundary_conditions

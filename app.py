@@ -155,15 +155,13 @@ def main():
         3. **視覚化**: 材料プロパティ、解析ステップ、荷重条件などを表形式で表示
         
         ### 対応している情報
-        - ✅ モデル情報(節点数、要素数など)
+        - ✅ モデル情報(節点数、要素数、拘束条件数など)
+        - ✅ 解析設定(PARAM、NLPARM)
         - ✅ 解析ステップ(SUBCASE、STGCONF、GEOPARM統合表示)
-        - ✅ 荷重条件(GRAV, PLOAD4)
-        - ✅ プロパティ(Shell, Solid)
+        - ✅ 荷重条件(GRAV、PLOAD4)
+        - ✅ プロパティ(Shell、Solid、Beam、Embedded Truss)
         - ✅ 材料(弾性、D-min、Mohr-Coulomb)
         - ✅ 境界条件(SPC)
-        - ✅ 非線形解析パラメータ(NLPARM)
-        - ✅ PARAMパラメータ
-        - ✅ SET定義(統計情報として表示)
         
         ### 今後の機能(予定)
         - 🔜 自動チェック機能
